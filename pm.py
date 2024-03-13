@@ -5,15 +5,12 @@ import uuid
 import json
 import argparse
 
-def errprint(msg : str):
-    print(msg)
-
 def run_shell_cmd(cmdlist : list):
     sp = subprocess.run(cmdlist, stdout=subprocess.PIPE)
 
     if sp.returncode:
         errmsg = f"Failed to execute cmd {' '.join(cmdlist)}"
-        errprint(errmsg)
+        print(errmsg)
     
     return (sp.returncode, sp.stdout, sp.stderr)
 
@@ -87,7 +84,7 @@ def gen_formatted_patches(manifest, outdir):
         ret, _, _ = run_shell_cmd(["git", "format-patch", "-1", "--output", f"{outdir}/{commit}.patch", f"{commit}"])
 
         if ret:
-            errprint(f"Failed to generate patch file for {commit}")
+            print(f"Failed to generate patch file for {commit}")
 
 def build_arg_parser():
     parser = argparse.ArgumentParser(description="This is a tool for easily managing your patches")
