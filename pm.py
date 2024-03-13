@@ -73,7 +73,7 @@ def gen_patch_manifest(summarys, outdir, gen_template=False) -> list:
         })
     
     with open(os.path.join(outdir, "Patch_Manifest.json"), "w") as f:
-        f.write("// This file is auto generated, but feel free to modify it"
+        f.write("// This file is auto generated, but feel free to modify it "
        "according to your needs\n")
         json.dump(manifest, f, indent=4)
 
@@ -150,9 +150,25 @@ def handle_gen_patches(patch_dir, filter, repo_src):
     m = gen_patch_manifest(summarys, patch_dir)
     gen_formatted_patches(m, patch_dir)
 
+def parse_patch_manifest(filename : str):
+    manifest = None
 
-def handle_apply_patches():
-    pass
+    with open(filename, "r") as f:
+        no_comments = ""
+
+        for l in f.readlines():
+            if l.lstrip(" ").startswith("//"):
+                continue
+            no_comments += l
+        
+        manifest = json.loads(no_comments)
+
+    return manifest
+
+
+def handle_apply_patches(manifest_file : str):
+    parse_patch_manifest(manifest_file)
+    
 
 def handle_apply_dry_run():
     pass
@@ -173,14 +189,15 @@ def main():
     if args.command != "gen-patches" and not args.patch_dir:
         raise ValueError("patch directory must be specified when applying the patches")
     elif not args.repo_src:
-        raise ValueError("repo upstream source must be specified when generating patches")
+        print("WARNING: repo upstream source not specified, using the current worktree as the log source!")
 
     handler = valid_cmds.get(args.command)
 
     if args.command == "gen-patches":
         handler(args.patch_dir, args.filter, args.repo_src)
     else:
-        handler(args.patch_dir)
+        manifest_file = os.path.join(args.patch_dir, "Patch_Manifest.json")
+        handler(manifest_file)
 
 if __name__ == "__main__":
     sys.exit(main())
