@@ -216,6 +216,23 @@ def handle_apply_patches(manifest_file : str, branch : str, patch_dir : str):
 def handle_apply_dry_run():
     pass
 
+def handle_gen_csv_report(manifest_file : str, report_file : str):
+    import csv
+
+    manifest = parse_patch_manifest(manifest_file)
+
+    #FIXME: the url is hard coded here
+
+    url_prefix = "https://github.com/realprocrastinator/incubator-nuttx/commit/"
+
+    with open(report_file, 'w', newline='') as f:
+        writer = csv.writer(f, delimiter=',', quotechar=',', quoting=csv.QUOTE_MINIMAL)
+        
+        writer.writerow(["Commit", "Date", "Summary", "Link"])
+
+        for m in manifest:
+            writer.writerow([m.get("commit"), m.get("date"), f'\"{m.get("summary")}\"', f'\"{url_prefix + m.get("commit")}\"'])
+
 def main():
     
     args = build_arg_parser().parse_args()
@@ -237,15 +254,18 @@ def main():
 
     handler = valid_cmds.get(args.command)
 
+    manifest_file = os.path.join(args.patch_dir, "Patch_Manifest.json")
+    
     if args.command == "gen-patches":
         handler(args.patch_dir, args.filter, args.repo_src)
+    elif args.command == "gen-csv-files":
+        handler(manifest_file, os.path.join(args.patch_dir, "report.csv"))
     else:
         branch = args.branch
 
         if not branch:
             branch = os.path.basename(os.path.dirname(f"{args.patch_dir}")) # the default branch name will be same as the dir name for holding the patches
 
-        manifest_file = os.path.join(args.patch_dir, "Patch_Manifest.json")
         handler(manifest_file, branch, args.patch_dir)
 
 if __name__ == "__main__":
