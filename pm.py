@@ -167,7 +167,11 @@ def parse_patch_manifest(filename : str):
 
 
 def handle_apply_patches(manifest_file : str):
-    parse_patch_manifest(manifest_file)
+    manifest = parse_patch_manifest(manifest_file)
+
+    # check if we have local 
+
+    # checkout a new branch for applying the patches
     
 
 def handle_apply_dry_run():
