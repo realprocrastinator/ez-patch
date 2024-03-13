@@ -166,13 +166,52 @@ def parse_patch_manifest(filename : str):
     return manifest
 
 
-def handle_apply_patches(manifest_file : str):
+def handle_apply_patches(manifest_file : str, branch : str, patch_dir : str):
     manifest = parse_patch_manifest(manifest_file)
 
-    # check if we have local 
+    # FIXME: check if we have local uncommitted changes?
 
     # checkout a new branch for applying the patches
-    
+    ret, out, _ = run_shell_cmd(["git", "checkout", "-b", f"{branch}"])
+
+    if ret:
+        print(f"Failed to create a new branch {branch}")
+        raise RuntimeError("Git failed to create branch")
+
+    print(f"Creating a new branch {branch} for applying the following patches")
+
+    git_apply_patch_cmd = ["git", "am", "-3", "place_holder"]
+
+    # apply the patches one by one, abort on any errors
+    for m in manifest:
+        # skip any patch that the user doesn't want to apply
+        apply = m.get("apply")
+        commit = m.get("commit")
+        summary = m.get("summary")
+        
+        print(f"About to {'skip' if not apply else 'apply'} patch {commit} about {summary}...")
+        
+        if not apply:
+            continue
+
+        # find the patch file according to the commit hash
+        patch_file = os.path.join(patch_dir, f"{commit}.patch")
+
+        git_apply_patch_cmd[-1] = patch_file
+
+
+        ret, out, err = run_shell_cmd(git_apply_patch_cmd)
+
+        if ret:
+            print(f"Failed to apply patch {commit}")
+            print("Due to: ")
+            if out:
+                print(out.decode())
+            if err:
+                print(err.decode())
+            raise RuntimeError("Git apply patch failed")
+
+        print()
 
 def handle_apply_dry_run():
     pass
@@ -185,6 +224,7 @@ def main():
         "gen-patches" : handle_gen_patches,
         "apply-patches" : handle_apply_patches,
         "apply-dry-run" : handle_apply_dry_run,
+        "gen-csv-files" : handle_gen_csv_report,
     }
 
     if args.command not in valid_cmds:
@@ -200,8 +240,13 @@ def main():
     if args.command == "gen-patches":
         handler(args.patch_dir, args.filter, args.repo_src)
     else:
+        branch = args.branch
+
+        if not branch:
+            branch = os.path.basename(os.path.dirname(f"{args.patch_dir}")) # the default branch name will be same as the dir name for holding the patches
+
         manifest_file = os.path.join(args.patch_dir, "Patch_Manifest.json")
-        handler(manifest_file)
+        handler(manifest_file, branch, args.patch_dir)
 
 if __name__ == "__main__":
     sys.exit(main())
