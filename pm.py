@@ -180,7 +180,11 @@ def handle_apply_patches(manifest_file : str, branch : str, patch_dir : str):
     git_apply_patch_cmd = ["git", "am", "-3", "place_holder"]
 
     # apply the patches one by one, abort on any errors
-    for m in manifest:
+    # TODO: for now we apply the patches in the reverse order
+    # as the first commit in the manifest file is the latest one
+    # hence it should be applied at last. In the future, we 
+    # should apply patches by the given relation chain! 
+    for m in manifest[::-1]:
         # skip any patch that the user doesn't want to apply
         apply = m.get("apply")
         commit = m.get("commit")
